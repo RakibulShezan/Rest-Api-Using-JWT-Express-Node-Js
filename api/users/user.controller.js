@@ -21,13 +21,14 @@ const checkUserInputs = (body) => {
       ? errors.flag
       : (errors.flag = false)
     : ((errors.flag = true), errors.message.push("Invalid Number"));
-  typeof body.password === "string" && body.password.trim().length > 0
+  typeof body.password === "string" && body.password.trim().length >= 6
     ? errors.flag
       ? errors.flag
       : (errors.flag = false)
-    : ((errors.flag = true), errors.message.push("Invalid Password"));
+    : ((errors.flag = true),
+      errors.message.push("Password must be at least 6 characters"));
   typeof body.gender === "string" &&
-  ["male", "female"].indexOf(body.gender) > -1
+  ["male", "female", "other"].indexOf(body.gender.toLowerCase()) > -1
     ? errors.flag
       ? errors.flag
       : (errors.flag = false)
@@ -76,7 +77,6 @@ module.exports = {
         } else {
           const salt = genSaltSync(10);
           body.password = hashSync(body.password, salt);
-          console.log(body);
           create(body, (err, results) => {
             if (err) {
               console.log(err);

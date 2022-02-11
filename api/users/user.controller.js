@@ -9,13 +9,26 @@ const {
 const { genSaltSync, hashSync, compareSync } = require("bcrypt");
 const { sign } = require("jsonwebtoken");
 
-//function to validate all the user inputs
+//function to validate  that all the user inputs
 const checkUserInputs = (body) => {
   let errors = { flag: false, message: [] };
   typeof body.email === "string" &&
   body.email.match(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)
-    ? (errors.flag = false)
+    ? errors.flag
+      ? errors.flag
+      : (errors.flag = false)
     : ((errors.flag = true), errors.message.push("Invalid email pattern"));
+  typeof body.first_name === "string" && body.first_name.trim().length > 0
+    ? errors.flag
+      ? errors.flag
+      : (errors.flag = false)
+    : ((errors.flag = true), errors.message.push("Invalid first name"));
+  typeof body.last_name === "string" && body.last_name.trim().length > 0
+    ? errors.flag
+      ? errors.flag
+      : (errors.flag = false)
+    : ((errors.flag = true), errors.message.push("Invalid last name"));
+
   typeof body.number === "string" && body.number.trim().length === 11
     ? errors.flag
       ? errors.flag

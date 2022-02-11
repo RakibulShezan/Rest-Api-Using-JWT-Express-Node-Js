@@ -8,24 +8,96 @@ const {
 } = require("../users/user.service");
 const { genSaltSync, hashSync, compareSync } = require("bcrypt");
 const { sign } = require("jsonwebtoken");
+
+//function to validate all the user inputs
+const checkUserInputs = (body) => {
+  let errors = { flag: false, message: [] };
+  typeof body.email === "string" &&
+  body.email.match(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)
+    ? (errors.flag = false)
+    : ((errors.flag = true), errors.message.push("Invalid email pattern"));
+  typeof body.number === "string" && body.number.trim().length === 11
+    ? errors.flag
+      ? errors.flag
+      : (errors.flag = false)
+    : ((errors.flag = true), errors.message.push("Invalid Number"));
+  typeof body.password === "string" && body.password.trim().length > 0
+    ? errors.flag
+      ? errors.flag
+      : (errors.flag = false)
+    : ((errors.flag = true), errors.message.push("Invalid Password"));
+  typeof body.gender === "string" &&
+  ["male", "female"].indexOf(body.gender) > -1
+    ? errors.flag
+      ? errors.flag
+      : (errors.flag = false)
+    : ((errors.flag = true), errors.message.push("Invalid Gender"));
+
+  return errors;
+};
 module.exports = {
   createUser: (req, res) => {
     const body = req.body;
-    const salt = genSaltSync(10);
-    body.password = hashSync(body.password, salt);
-    create(req.body, (err, results) => {
-      if (err) {
-        console.log(err);
-        return res.status(500).json({
-          success: 0,
-          message: "Database connection error",
-        });
-      }
-      return res.status(200).json({
-        success: 1,
-        data: results,
+    /*    body.email =
+      typeof body.email === "string" &&
+      body.email.match(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)
+        ? body.email.toLowerCase()
+        : false;
+    body.number =
+      typeof body.number === "string" && body.number.trim().length === 11
+        ? body.number
+        : false;
+    body.password =
+      typeof body.password === "string" && body.password.trim().length > 0
+        ? body.password
+        : false;
+    body.gender =
+      typeof body.gender === "string" &&
+      ["male", "female"].indexOf(body.gender) > -1
+        ? body.gender
+        : false; */
+    const errorInput = checkUserInputs(body);
+    if (!errorInput.flag) {
+      getUserByEmail(body.email, (err, results) => {
+        if (results.length > 0) {
+          if (err) {
+            console.log(err);
+            return res.status(500).json({
+              success: 0,
+              message: "Database connection error",
+            });
+          }
+          if (results.length > 0) {
+            return res.status(400).json({
+              success: 0,
+              message: "User already exists",
+            });
+          }
+        } else {
+          const salt = genSaltSync(10);
+          body.password = hashSync(body.password, salt);
+          console.log(body);
+          create(body, (err, results) => {
+            if (err) {
+              console.log(err);
+              return res.status(500).json({
+                success: 0,
+                message: "Database connection error",
+              });
+            }
+            return res.status(200).json({
+              success: 1,
+              data: results,
+            });
+          });
+        }
       });
-    });
+    } else {
+      return res.status(400).json({
+        success: 0,
+        message: errorInput.message, //"Invalid input messages"
+      });
+    }
   },
   getAllUser: (req, res) => {
     getUsers((err, results) => {
@@ -113,7 +185,7 @@ module.exports = {
           data: "Invalid email or password",
         });
       }
-      const result = compareSync(body.password, results.password);
+      const result = compareSync(body.password, results[0].password);
       if (result) {
         results.password = undefined;
         const jsontoken = sign({ result: results }, "shezan", {
